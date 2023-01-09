@@ -14,6 +14,8 @@ In the project directory, you can run:
 Which runs the app in development mode.\
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
+The project has been published to Surge and can be accessed via this link: https://spotify-features-dj.surge.sh/
+
 
 ## Usage
 
