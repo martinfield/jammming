@@ -1,84 +1,89 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import SearchBar from '../SearchBar/searchbar';
 import SearchResults from '../SearchResults/searchResults';
 import Playlist from '../Playlist/playlist';
 import Spotify from '../../util/spotify';
 
-class App extends React.Component {
-  constructor(props){
-    super(props);
-    this.state = {
-      searchResults: [],
-      playlistName: 'pendulum greatist hits',
-      playlistTracks: [],
-      trackAnalysis: {}
-    }
-    this.addTrack = this.addTrack.bind(this);
-    this.removeTrack = this.removeTrack.bind(this);
-    this.updatePlaylistName = this.updatePlaylistName.bind(this);
-    this.savePlaylist = this.savePlaylist.bind(this);
-    this.search = this.search.bind(this);
-    this.trackFeatures = this.trackFeatures.bind(this);
-  }
-  addTrack(track){
-    let tracks = this.state.playlistTracks;
-    if(tracks.find(savedTrack => savedTrack.id === track.id)){
+const App = () => {
+  const [searchResults, setSearchResults] = useState([]);
+  const [playlistName, setPlaylistName] = useState('pendulum greatist hits');
+  const [playlistTracks, setPlaylistTracks] = useState([]);
+  const [trackAnalysis, setTrackAnalysis] = useState({});
+
+
+  const addTrack = (track) => {
+    let tracks = [...playlistTracks];
+    if (tracks.find(savedTrack => savedTrack.id === track.id)) {
       return;
     }
     tracks.push(track);
-    this.setState({playlistTracks: tracks});
+    setPlaylistTracks(tracks);
   }
-  removeTrack(track){
-    let tracks = this.state.playlistTracks;
+
+  const removeTrack = (track) => {
+    let tracks = [...playlistTracks];
     tracks = tracks.filter(currentTrack => currentTrack.id !== track.id);
+    setPlaylistTracks(tracks);
+  }
 
-    this.setState({playlistTracks: tracks});
+  const updatePlaylistName = (name) => {
+    setPlaylistName(name);
   }
-  updatePlaylistName(name){
-    this.setState({playlistName: name})
-  }
-  savePlaylist(){
-    const trackURIs = this.state.playlistTracks.map(track => track.uri);
-    Spotify.savePlaylist(this.state.playlistName, trackURIs).then(()=> {
-      this.setState({
-        playlistName: 'New Playlist',
-        playlistTracks: []
-      })
+
+  const savePlaylist = () => {
+    const trackURIs = playlistTracks.map(track => track.uri);
+    Spotify.savePlaylist(playlistName, trackURIs).then(() => {
+      setPlaylistName('New Playlist');
+      setPlaylistTracks([]);
     })
   }
-  search(term){
+
+  const search = (term) => {
     Spotify.search(term).then(searchResults => {
-      this.setState({
-        searchResults: searchResults
-      })
+      setSearchResults(searchResults);
     })
   }
-  async trackFeatures(trackId){
-    const result = await Spotify.audioFeatures(trackId)
 
-    return result
+  const trackFeatures = async (trackId) => {
+    const result = await Spotify.audioFeatures(trackId)
+    return result;
   }
-  render(){
-    return (
-      <div>
-        <h1>Ja<span className="highlight">mmm</span>ing</h1>
-        <div className="App">
-          <SearchBar onSearch={this.search} />
-          <div className="App-playlist">
-            <SearchResults searchResults={this.state.searchResults} audioFeatures={this.trackFeatures} onAdd={this.addTrack}/>
-            <Playlist playlistName={this.state.playlistName} 
-            playlistTracks={this.state.playlistTracks} 
-            audioFeatures={this.trackFeatures}
-            onRemove={this.removeTrack} 
-            onNameChange={this.updatePlaylistName}
-            onSave={this.savePlaylist}/>
-          </div>
+
+  const generatePlaylist = (seedTrackFeatures) => {
+    const seedTrack = playlistTracks[0].id
+    const artistId = playlistTracks[0].artistId
+    const seedGenres = Spotify.getArtistGenres(artistId);
+    Spotify.generatePlaylist(seedTrack, seedGenres, seedTrackFeatures).then((generatedTracks) => {
+      setPlaylistTracks(generatedTracks);
+    });
+    
+
+  };
+  return (
+    <div>
+      <h1>Ja<span className="highlight">mmm</span>ing</h1>
+      <div className="App">
+        <SearchBar onSearch={search} />
+        <div className="App-playlist">
+          <SearchResults 
+          searchResults={searchResults} 
+          audioFeatures={trackFeatures} 
+          onAdd={addTrack}
+          generatePlaylist={generatePlaylist}
+          />
+          <Playlist playlistName={playlistName} 
+          playlistTracks={playlistTracks} 
+          audioFeatures={trackFeatures}
+          onRemove={removeTrack} 
+          onNameChange={updatePlaylistName}
+          onSave={savePlaylist}
+          generatePlaylist={generatePlaylist}/>
+          
         </div>
       </div>
-    );
-  }
-
-}
+    </div>
+  );
+ }
 
 export default App;

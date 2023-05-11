@@ -1,6 +1,6 @@
 let accessToken;
 const clientId = '99eb369f2ee04c08b85eee35deecef57';
-const redirectUri = "https://spotify-features-dj.surge.sh";
+const redirectUri = "http://localhost:3000/";
 
 const Spotify = {
     getAccessToken(){
@@ -19,7 +19,7 @@ const Spotify = {
             window.history.pushState('Access Token', null, '/');
             return accessToken;
         } else {
-            const accessUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&scope=playlist-modify-public&redirect_uri=${redirectUri}`
+            const accessUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&scope=playlist-modify-public&redirect_uri=${redirectUri}`;
             window.location = accessUrl;
         }
     },
@@ -32,6 +32,7 @@ const Spotify = {
         }).then(response => {
             return response.json();
         }).then(jsonResponse => {
+            console.log(jsonResponse)
             if (!jsonResponse.tracks) {
                 return [];
             }
@@ -39,6 +40,7 @@ const Spotify = {
                 id: track.id,
                 name: track.name,
                 artist: track.artists[0].name,
+                artistId: track.artists[0].id,
                 album: track.album.name,
                 uri: track.uri
             }));
@@ -143,12 +145,56 @@ const Spotify = {
             }
             trackFeatures.keymode = `${trackFeatures.key} ${trackFeatures.mode}`
             
-            results = {"tempo": trackFeatures.tempo, "key": trackFeatures.keymode};
+            results = {
+                "tempo": trackFeatures.tempo,
+                 "keymode": trackFeatures.keymode, 
+                 "energy": trackFeatures.energy, 
+                 "danceability": trackFeatures.danceability, 
+                 "instrumentalness": trackFeatures.instrumentalness
+                };
+
             return results;
-            
-            
+        })  
+    },
+    generatePlaylist(seedTrack, seedGenres, seedTrackFeatures) {
+        const accessToken = Spotify.getAccessToken();
+      
+        return fetch(`https://api.spotify.com/v1/recommendations?seed_tracks=${seedTrack}&seed_genres=${seedGenres}&target_tempo=${seedTrackFeatures.tempo}&target_energy=${seedTrackFeatures.energy}&target_danceability=${seedTrackFeatures.danceability}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         })
-        
-    }
+          .then((response) => response.json())
+          .then((jsonResponse) => {
+            if (!jsonResponse.tracks) {
+              return [];
+            }
+            return jsonResponse.tracks.map((track) => ({
+              id: track.id,
+              name: track.name,
+              artist: track.artists[0].name,
+              artistId: track.artists[0].id,
+              album: track.album.name,
+              uri: track.uri,
+            }));
+          });
+      },
+      getArtistGenres(artistId) {
+        const accessToken = Spotify.getAccessToken();
+    
+        return fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
+          headers: { 
+            Authorization: `Bearer ${accessToken}` 
+        },
+        })
+          .then((response) => response.json())
+          .then((jsonResponse) => {
+            if (!jsonResponse.genres) {
+              return [];
+            }
+            return jsonResponse.genres;
+          });
+      },
+      
 }
 export default Spotify;
