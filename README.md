@@ -1,6 +1,6 @@
 # Jammming
 
-Jamming is a React Application that allows users to create and save Spotify playlists using search results with track analysis information such as BPM and Key.
+Jamming is a React Application that allows users to create and save Spotify playlists using search results with track analysis information such as BPM and Key. It also allows users to generate entire playlists based on the input of one track. 
 
 
 ## Installation
